@@ -10,9 +10,4 @@ GLA=tf(GlaNum,GlaDen);
 % GraficarLugarDeSingularidades(GLA)
 % GraficoAreasPosibles(3,30)
 % GraficarPolosDeseados(3, 30)
-
-% Polos deseados subamortiguados
-[sd, zeta, wn, wd] = GraficarPolosDeseados(3, 30);
-
-% Luego sobre eso, diseñar la red de adelanto
-DiseñarRedAdelantoInteractiva(GLA, sd)
+DesignCompensatorUI(GLA);
