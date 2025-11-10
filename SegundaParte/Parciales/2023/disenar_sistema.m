@@ -87,10 +87,25 @@ function [Gc, T_lazo_cerrado, Kc, Kv] = disenar_sistema(G, varargin)
     % 1. Lugar de raíces y singularidades
     subplot(2,2,1);
     GraficarLugarDeSingularidades(Gc);
+    legend('Área permitida','Polos deseados')
     GraficoAreasPosiblesMasSingularidades(Ts, Mp*100, G);
-    legend('Área permitida','Polos deseados','Polos Gc','Ceros Gc');
+    legend('Lugar de singularidade','Límite T_s','Líneas \beta_S_u_p','Líneas \beta_I_n_f','Area Permitida');
+    % Texto explicativo con colores
+    text(2, -2, { ...
+    '\color{red}× = Polos planta', ...
+    '\color{red}○ = Ceros planta', ...
+    '\color{blue}× = Polos controlador', ...
+    '\color{blue}○ = Ceros controlador'}, ...
+    'BackgroundColor', 'w', ...
+    'EdgeColor', 'k', ...
+    'FontSize', 10, ...
+    'VerticalAlignment', 'top', ...
+    'Interpreter', 'tex');
     title('Lugar de raíces');
     grid on;
+
+    %Simplificacion T_lazo_cerrado
+    T_lazo_cerrado = minreal(T_lazo_cerrado);
 
     % 2. Respuesta al escalón
     subplot(2,2,2);
@@ -118,7 +133,7 @@ function [Gc, T_lazo_cerrado, Kc, Kv] = disenar_sistema(G, varargin)
     text(0,0.45, sprintf('Kc = %.3f', Kc));
     text(0,0.3, sprintf('Kv = %.3f', Kv));
     text(0,0.15, sprintf('e_{rampa} = %.3f', e_rampa));
-    text(0,0.0, sprintf('Ganancia en DC = %.3f', dcgain(T_lazo_cerrado)));
+    text(0,0.0, sprintf('Valor final escalón = %.2f', dcgain(T_lazo_cerrado)));
     title('Constantes del Sistema');
 
     % --- Consola ---
@@ -128,4 +143,5 @@ function [Gc, T_lazo_cerrado, Kc, Kv] = disenar_sistema(G, varargin)
     fprintf('Valor final escalón = %.4f\n', dcgain(T_lazo_cerrado));
     fprintf('Polos del lazo cerrado:\n');
     disp(polos_cl);
+
 end
