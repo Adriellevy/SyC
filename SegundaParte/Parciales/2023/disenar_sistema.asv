@@ -1,0 +1,95 @@
+function [Gc, T_lazo_cerrado, K, K1_real] = disenar_sistema(G, varargin)
+    % ===============================================
+    % Diseña un controlador por lugar de raíces cumpliendo especificaciones
+    %
+    % Uso:
+    % disenar_sistema(G, 'Mp', 0.1, 'Ts', 0.6, 'K1min', 10)
+    % ===============================================
+
+    % --- Lectura de parámetros ---
+    p = inputParser;
+    addParameter(p, 'Mp', 0.1);
+    addParameter(p, 'Ts', 0.6);
+    addParameter(p, 'K1min', 10);
+    parse(p, varargin{:});
+    Mp = p.Results.Mp;
+    Ts = p.Results.Ts;
+    K1min = p.Results.K1min;
+
+    % --- Calcular zeta a partir de Mp ---
+    zeta = -log(Mp) / sqrt(pi^2 + (log(Mp))^2);
+
+    % --- Calcular wn a partir de Ts (aprox 4/(zeta*wn)) ---
+    wn = 4 / (zeta * Ts);
+
+    % --- Polos dominantes deseados ---
+    sigma = zeta * wn;
+    wd = wn * sqrt(1 - zeta^2);
+    polos_deseados = [-sigma + 1j*wd, -sigma - 1j*wd];
+
+    fprintf('ζ = %.3f, ωn = %.3f, polos deseados = %.2f ± j%.2f\n', zeta, wn, -sigma, wd);
+
+    % --- Mostrar lugar de raíces original ---
+    figure('Name', 'Diseño por Lugar de Raíces', 'NumberTitle', 'off');
+    subplot(2,2,1);
+    rlocus(G);
+    hold on;
+    plot(real(polos_deseados), imag(polos_deseados), 'r^', 'MarkerSize', 10, 'LineWidth', 2);
+    title('Lugar de raíces de G(s)');
+    grid on;
+
+    % --- Calcular K para que el lugar de raíces pase por los polos deseados ---
+    s_p = polos_deseados(1);
+    G_eval = evalfr(G, s_p);   % Evalúa G(s) en s = polo deseado
+    K = 1 / abs(G_eval);
+
+    % --- Controlador proporcional ---
+    Gc = K*;
+
+    % --- Transferencia de lazo cerrado ---
+    T_lazo_cerrado = feedback(Gc * G, 1);
+
+    % --- Calcular K1 (error a la rampa) ---
+    % K1 = lim s->0 s * Gc*G(s)
+    s = tf('s');
+    K1_real = dcgain(s * Gc * G);
+
+    % --- Mostrar resultados ---
+    fprintf('K1 obtenido = %.3f\n', K1_real);
+    if K1_real > K1min
+        fprintf('✅ Cumple con K1 > %.1f\n', K1min);
+    else
+        fprintf('❌ No cumple con K1 > %.1f\n', K1min);
+    end
+
+    % --- Graficar respuestas ---
+    subplot(2,2,2);
+    step(T_lazo_cerrado);
+    title('Respuesta al Escalón');
+    grid on;
+
+    subplot(2,2,3);
+    t = 0:0.01:5;
+    [y, t_out] = lsim(T_lazo_cerrado, t, t);
+    plot(t_out, y, 'b', 'LineWidth', 1.5);
+    hold on;
+    plot(t_out, t, '--r');
+    title('Respuesta a la Rampa');
+    legend('Salida', 'Referencia');
+    grid on;
+
+    subplot(2,2,4);
+    text(0,0.8, sprintf('ζ = %.3f', zeta), 'FontSize', 12);
+    text(0,0.6, sprintf('ωn = %.3f', wn), 'FontSize', 12);
+    text(0,0.4, sprintf('K = %.3f', K), 'FontSize', 12);
+    text(0,0.2, sprintf('K1 = %.3f', K1_real), 'FontSize', 12);
+    axis off;
+    title('Datos del Sistema Controlado');
+
+    % --- Salidas ---
+    if nargout == 0
+        fprintf('\nControlador: Gc(s) = %.3f\n', K);
+        fprintf('Transferencia en lazo cerrado:\n');
+        T_lazo_cerrado
+    end
+end

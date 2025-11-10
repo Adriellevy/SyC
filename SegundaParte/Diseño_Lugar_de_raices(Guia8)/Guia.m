@@ -1,13 +1,9 @@
 %Ejercicio 7
 
-GlaNum=[1 1/2]; 
-
-syms s;
-densimbolo = s*(s+1)*(s+2);
-GlaDen = sym2poly(expand(densimbolo));
-
-GLA=tf(GlaNum,GlaDen); 
+Den = sym2poly(expand((s+2)*(s+5)));
+Num = [2];
+G = tf(Num, Den);
 % GraficarLugarDeSingularidades(GLA)
 % GraficoAreasPosibles(3,30)
 % GraficarPolosDeseados(3, 30)
-DesignCompensatorUI(GLA);
+DesignCompensatorUI(G);
