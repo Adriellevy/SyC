@@ -1,40 +1,49 @@
-function fase_necesaria = faseCompensador(polos_existentes, ceros_existentes, polo_objetivo)
-% faseCompensador
-% Calcula la fase que debe aportar un compensador (cero o polo)
-% para cumplir la condición de fase del Lugar Geométrico de las Raíces.
-%
-%  fase_necesaria = 180° - (fase_total_actual mod 360°)
+function fase_necesaria = faseCompensador(Gnum, Gden, polo_objetivo, tipo_compensador)
+% faseCompensador usando coeficientes de polinomios
 %
 % ENTRADAS:
-%   polos_existentes   ? vector fila/columna con los polos existentes
-%   ceros_existentes   ? vector fila/columna con los ceros existentes
-%   polo_objetivo      ? punto complejo s = sigma + j*w donde queremos ubicar el polo
+%   Gnum              â†’ coeficientes del numerador (ej: 1 Ã³ [1 3])
+%   Gden              â†’ coeficientes del denominador (ej: [1 4 8 0])
+%   polo_objetivo     â†’ punto s deseado
+%   tipo_compensador  â†’ 'cero' o 'polo'
 %
 % SALIDA:
-%   fase_necesaria     ? fase (en grados) que debe aportar el compensador
-%
-% Ejemplo de uso:
-%   p = [-2 -5];
-%   z = [];
-%   s_obj = -4 + 6j;
-%   fase = faseCompensador(p, z, s_obj)
+%   fase_necesaria    â†’ fase en grados requerida del compensador
 
-    % --- función interna de cálculo de ángulo ---
-    ang = @(a, b) atan2d(imag(b - a), real(b - a)); 
-    % ángulo desde a ? b en grados
+    % --- FunciÃ³n Ã¡ngulo ---
+    ang = @(a,b) atan2d(imag(b - a), real(b - a));
 
+    % --- Obtener ceros y polos ---
+    ceros_existentes = roots(Gnum);
+    polos_existentes = roots(Gden);
+
+    % ---- Calcular fase total actual ----
     fase = 0;
 
-    % suma de ángulos de ceros
+    % Fase aportada por ceros
     for i = 1:length(ceros_existentes)
         fase = fase + ang(ceros_existentes(i), polo_objetivo);
     end
 
-    % resta de ángulos de polos
+    % Fase aportada por polos
     for i = 1:length(polos_existentes)
         fase = fase - ang(polos_existentes(i), polo_objetivo);
     end
 
-    % fase que debe aportar el compensador
-    fase_necesaria = 180 - fase;
+    % Normalizar
+    fase_actual = mod(fase, 360);
+
+    % --- Determinar fase necesaria segÃºn tipo ---
+    switch lower(tipo_compensador)
+        case 'cero'
+            % El cero suma fase
+            fase_necesaria = 180 - fase_actual;
+
+        case 'polo'
+            % El polo resta fase
+            fase_necesaria = -(180 - fase_actual);
+
+        otherwise
+            error("tipo_compensador debe ser 'cero' o 'polo'");
+    end
 end

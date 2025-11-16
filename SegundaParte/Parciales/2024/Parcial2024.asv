@@ -6,11 +6,11 @@ Gnum = [0 0 1];
 G=tf(Gnum,Gden); 
 PLA=pole(G);
 
-%% Diseño por lugar de raices
+%% DiseÃ±o por lugar de raices
 PLC= polos_TS_MP(1,0.15); % Polos del sistema: p1 = -4.0000+6.6239j, p2 = -4.0000-6.6239j
 PLCObjetivos=[PLC(1)-(1+1i*1.6239) PLC(2)-(1-1i*1.6239)]; %%%Los corrigo uno iz, uno derecha
 %Este objeitvo es porque necesito hacer que el lugar de raices pase para
-%cumplir las condiciones de diseño solicitadas.
+%cumplir las condiciones de diseÃ±o solicitadas.
 
 % === Fase a compensar (en grados) ===
 FaseACompensar = faseCompensador(Gden, Gnum, PLCObjetivos(1));  %Condicion de fase da 220, la separo con dos ceros del PID
@@ -19,10 +19,10 @@ FaseACompensar = faseCompensador(Gden, Gnum, PLCObjetivos(1));  %Condicion de fa
 FaseACompensarRad = deg2rad(FaseACompensar);
 
 % === Distancia real que deben tener los ceros del PID ===
-% Fórmula correcta usando tangente
+% FÃ³rmula correcta usando tangente
 DistanciaAlPoloPLC = imag(PLCObjetivos(1)) / tan( pi - FaseACompensarRad/2 );
 
-% === Posición real donde ubicar los ceros ===
+% === PosiciÃ³n real donde ubicar los ceros ===
 PosicionReal = real(PLCObjetivos(1)) + DistanciaAlPoloPLC;
 
 s=tf('s');
@@ -37,12 +37,12 @@ disenar_sistema(G,'Ts',1,'Mp',0.15,'Gc',Gc); %chequeo el sistema y me dan la fig
 %TODO hacer funcion para calcularme fase necesaria
 %ver de compensar con dos ceros en vez de cancelar singularidades por ahi. 
 % Gc = k(s+3,97)^2/s; Raices de la clase
-%% Diseño por raices 2da version
+%% DiseÃ±o por raices 2da version
 
 % GraficoAreasPosiblesMasSingularidades(1,0.15,G)
 % Gc=(s-3)^2/s;
 % disenar_sistema(G,'Ts',1,'Mp',0.15,'Gc',Gc);
-% En el enciso anterior no tenía el polo en el origen por lo que esta mal
+% En el enciso anterior no tenÃ­a el polo en el origen por lo que esta mal
 
 % % compensado el sistema. 
 % Gden = [1 4 8]; 
@@ -51,7 +51,7 @@ disenar_sistema(G,'Ts',1,'Mp',0.15,'Gc',Gc); %chequeo el sistema y me dan la fig
 % %debido a la division de la fase a compensar con dos 
 
 % G=tf(Gnum,Gden); 
-% Entonces ahora tengo que diseñar mi sistema con ese polo en el origen como si fuera en la planta. 
+% Entonces ahora tengo que diseÃ±ar mi sistema con ese polo en el origen como si fuera en la planta. 
 Gden_con_polo = [1 4 8 0]; 
 Gnum_con_polo = [0 0 0 1]; 
 %Controlado con un sistema PID (dos ceros y un polo(ya agregado para aumentar el tipo),
@@ -64,7 +64,7 @@ PLC= polos_TS_MP(1,0.15); % Polos del sistema: p1 = -4.0000+6.6239j, p2 = -4.000
 PLCObjetivos=[PLC(1)-(1+1i*1.6239) PLC(2)-(1-1i*1.6239)]; 
 
 FaseACompensar = faseCompensador(Gden_con_polo, [], PLCObjetivos(1),'Cero');
-FaseACompensar = 360 - FaseACompensar;  %Condicion de fase da 219.9° distinto a 203
+FaseACompensar = 360 - FaseACompensar;  %Condicion de fase da 219.9Â° distinto a 203
 
 %Para la funcion tangente necesito la fase en radianes. 
 FaseACompensarRad = deg2rad(FaseACompensar)/2;
@@ -74,23 +74,17 @@ DistanciaAlPoloPLCObjetivo = imag(PLCObjetivos(1)) / tan(pi - FaseACompensarRad 
 %La distancia de los PLC obejtivos es de 1.815 es distinta a la distancia
 %obtenida por paula
 
-% === Posición real donde ubicar los ceros ===
+% === PosiciÃ³n real donde ubicar los ceros ===
 PosicionReal = real(PLCObjetivos(1)) + DistanciaAlPoloPLCObjetivo;
 %La ubicacion en el eje real de los ceros es de -3.18
 
 s=tf('s');
 Gceros=(s-PosicionReal)^2;
 GTotal=simplify(GPlanta_con_polo*Gceros,'v');
-%rlocus(GTotal)
 %Eligo ganancia K = 8.93;
 Gcontrol=8.93*Gceros/s;
 Gden = [1 4 8]; 
 Gnum = [0 0 1];
-G=tf(Gnum,Gden); 
-disenar_sistema(G,'Ts',1,'Mp',0.15,'Gc',Gcontrol); %chequeo el sistema y me dan la figura con todos los resultados
-
-
-
 
 %% Ejercicio 2
 [num, den] = tfdata(G, 'v');  % 'v' devuelve vectores en lugar de celdas
