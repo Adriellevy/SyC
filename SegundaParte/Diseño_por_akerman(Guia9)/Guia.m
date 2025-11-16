@@ -72,5 +72,38 @@ k = acker(A,B,Plc);
 kr=0.001;
 
 
+%% Ejercicio 5
+s=tf('s');
+G=1/(1+s/100)^2;
+[num, den] = tfdata(G, 'v');  % 'v' devuelve vectores en lugar de celdas
+% step(G)
+[A,B,C,D] = tf2ss(num, den);
+PLC =[-500+1i*600;-500-1i*600]; 
+
+Init_cond=0;
+
+
+A=flip(fliplr(A));
+B=flip(B);
+C=fliplr(C);
+
+k = acker(A,B,PLC);
+kr = 1 / (C * inv(-A + B*k) * B);
+
+
+% === Ejecutar el modelo de Simulink ===
+%open_system('Ejercicio_4');  % opcional, para abrir la ventana
+simOut = sim('Ejercicio_4','ReturnWorkspaceOutputs','on');
+
+% === Mostrar la respuesta (si usás un bloque "To Workspace" llamado 'y') ===
+y = simOut.y;  % salida simulada
+t = simOut.tout;
+
+figure;
+plot(t, y, 'LineWidth', 2);
+grid on;
+title('Respuesta al Escalón del Sistema con Realimentación');
+xlabel('Tiempo [s]');
+ylabel('Salida y(t)');
 
 
