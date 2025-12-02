@@ -1,4 +1,6 @@
 %% Parcial 2024
+clc;
+clear;
 Gden = [1 4 8]; 
 Gnum = [0 0 1]; 
 %Controlado con un sistema PID (dos ceros y un polo para aumentar el tipo),
