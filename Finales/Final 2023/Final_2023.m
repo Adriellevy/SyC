@@ -15,3 +15,6 @@ Gc=(s-1)/(s+2);
 % rlocus(Gc*Gs)
 t = 0:0.01:10;   
 step(feedback(17*Gc*Gs,1),t)
+
+%%
+Simulink.exportToVersion('MiModelo.slx','MiModelo_R2016a.slx','R2016a');
