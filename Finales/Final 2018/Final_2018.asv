@@ -1,0 +1,130 @@
+clear; 
+clc; 
+close all;  % Cierra otras ventanas
+
+s = tf('s');
+
+Gs = 0.4 / (s^3+0.3*s^2-0.9*s-0.4)
+H = 1;
+Polos=pole(Gs);
+%%
+GraficoAreasPosiblesMasSingularidades(1,4,Gs)
+%% Propongo dos compensadores redes de adelanto para eliminar dos polos. 
+% Uno el inestable y otro un dominante cercano al eje y.
+% Gs = 1 / (( s - 1 )*( s + 4 ));
+Gc1=(s-Polos(1))/(s+13)
+Gc2=(s-Polos(3));%/(s+sp2);sp2 lo dejo sin setear para calcular la fase necesaria
+Gsimplificada=minreal(Gc1*Gc2*Gs);
+PLCObjetivos=[-5+i*2.6; -5-i*2.6];
+
+FaseACompensar=getAngACompensar(PLCObjetivos(1),0,pole(Gsimplificada));
+DistanciaAlPoloPLC = imag(PLCObjetivos(1)) / tand(FaseACompensar);
+PosicionReal = real(PLCObjetivos(1)) + DistanciaAlPoloPLC;
+
+
+Gc2=Gc2/(s-PosicionReal);
+Gsimplificada=minreal(Gc1*Gc2*Gs);
+% GraficarLugarDeSingularidades(Gsimplificada)
+%
+rlocus(Gsimplificada);
+%% Rta al escalon
+step(feedback(1130*Gsimplificada,1),15)
+
+%% Rta a la rampa 
+% Ms=feedback(10*Gsimplificada,1)
+% t = 0:0.01:30;   % vector de tiempo
+% r = t;           % señal rampa
+% 
+% % calcular respuesta
+% y = lsim(Ms, r, t);
+% 
+% 
+% figure;
+% plot(t, y, 'LineWidth', 2);
+% hold on;
+% plot(t, r, '--', 'LineWidth', 1.2);
+% legend('Salida y(t)', 'Entrada r(t)=t');  
+
+%% Como me pide cond. Iniciales le asigno Valores de cond iniciales al primer integrador. 
+% Pero primero tengo que pasarlo a Modelo de estados. 
+
+[num, den] = tfdata(feedback(minreal(1130*Gs*Gc1*Gc2),1), 'v');  % 'v' devuelve vectores en lugar de celdas
+% step(G)
+[A,B,C,D] = tf2ss(num, den);
+% 
+% A=flip(fliplr(A));
+% B=flip(B);
+% C=fliplr(C);
+
+% K = acker(A,B,[PLCObjetivos' -15]);
+% K = [K 1] %Le agrego al final un valor para que no se rompa
+K=[1 1 1 1];
+% kr = 1 / (C * inv(-A + B*k) * B);
+% n = size(A,1);
+% Co = ctrb(A,B);
+% rankCo = rank(Co);
+% fprintf('Orden del sistema n = %d, rango de la matriz de controlabilidad = %d\n', n, rankCo);
+% if rankCo < n
+%     error('El sistema NO es completamente controlable. No puedes colocar todos los polos.');
+% end
+Init_cond=[0 0 0];
+Tiempo_Sim=1;
+
+% === Ejecutar el modelo de Simulink ===
+open_system('Sistema_Seguimiento_Con_Planta_Tipo_0');  % opcional, para abrir la ventana
+% simOut = sim('Generico_Retroalimentacion_Sin_Aumento_Tipo','ReturnWorkspaceOutputs','on');
+%% 
+sys_cl = feedback(1130*Gsimplificada, 1);   % sistema en lazo cerrado
+sysss = ss(sys_cl); % A, B, C, D
+sysss_comp = canon(sysss, 'companion'); %Lo paso a formato canonico
+% [A2, B2, C2, D2] = ssdata(sysss_comp)
+% A2=A2';
+% B2=B2;
+% C2=C2;
+% D2=D2;
+% Tiempo de simulación (ajusta duración y dt si quieres)
+tfinal = 15;
+dt = 0.01;
+t = 0:dt:tfinal;
+
+% Entrada escalón unitario
+u = ones(size(t));
+
+% ---- CONDICIONES INICIALES (ejemplo) ----
+% Como Gs es de orden 3 (por tu planta), el ss tendrá 3 estados.
+% Prueba varios sets; aquí pongo un ejemplo:
+x0 = [0; 0; 0];    % condiciones iniciales en el espacio de estados
+% Explica: usé un desplazamiento positivo en el 1er estado, negativo en el 2do y pequeño en el 3ro.
+% Puedes cambiar a x0 = [1;0;0], x0 = [0;0;0] (para comparar), etc.
+
+% Simular respuesta al escalón con condiciones iniciales:
+[y, t_out, x] = lsim(sysss_comp, u, t, x0);
+
+% Calcular error respecto al escalón unitario
+% e = u - y;
+
+% Graficar resultado (salida y error)
+figure;
+% subplot(2,1,1);
+plot(t_out, y, 'LineWidth', 1.2);
+grid on;
+xlabel('t (s)');
+ylabel('y(t)');
+title('Respuesta al escalón del sistema en lazo cerrado (condiciones iniciales no nulas)');
+legend(sprintf('x0 = [%g, %g, %g]', x0(1), x0(2), x0(3)), 'Location','best');
+
+% subplot(2,1,2);
+% plot(t_out, e, 'LineWidth', 1.2);
+% grid on;
+% xlabel('t (s)');
+% ylabel('e(t)');
+% title('Error frente al escalón unitario: e(t) = 1 - y(t)');
+% ylim([-0.2 1.2]); % ajustar para mejor visual
+% legend('Error e(t)', 'Location','best');
+%% Segunda parte Motor
+s=tf('s');
+Gp=1.75/((s+2.5-j*5.1)*(s+2.5+j*5.1))
+% GraficoAreasPosiblesMasSingularidades(0.19,15,Gp)
+Gc=(s+2.5-j*5.1)*(s+2.5+j*5.1)/(s*(s+50)); 
+% rlocus(minreal(Gc*Gp))
+step(feedback(450*Gc*Gp,1))
