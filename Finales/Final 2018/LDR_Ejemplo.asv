@@ -1,0 +1,46 @@
+clear; 
+clc; 
+close all;  % Cierra otras ventanas
+
+s = tf('s');
+
+Gs = 0.4 / (s^3+0.3*s^2-0.9*s-0.4)
+H = 1;
+Polos=pole(Gs);
+%%
+GraficoAreasPosiblesMasSingularidades(1,4,Gs)
+%% Propongo dos compensadores redes de adelanto para eliminar dos polos. 
+% Uno el inestable y otro un dominante cercano al eje y.
+% Gs = 1 / (( s - 1 )*( s + 4 ));
+Gc1=(s-Polos(1))/(s+13)
+Gc2=(s-Polos(3));%/(s+sp2);sp2 lo dejo sin setear para calcular la fase necesaria
+Gsimplificada=minreal(Gc1*Gc2*Gs);
+PLCObjetivos=[-5+i*2.6; -5-i*2.6];
+
+FaseACompensar=getAngACompensar(PLCObjetivos(1),0,pole(Gsimplificada));
+DistanciaAlPoloPLC = imag(PLCObjetivos(1)) / tand(FaseACompensar);
+PosicionReal = real(PLCObjetivos(1)) + DistanciaAlPoloPLC;
+
+
+Gc2=Gc2/(s-PosicionReal);
+Gsimplificada=minreal(Gc1*Gc2*Gs);
+% GraficarLugarDeSingularidades(Gsimplificada)
+%
+rlocus(Gsimplificada);
+%%
+step(feedback(1130*Gsimplificada,1),15)
+
+%% 
+Ms=feedback(10*Gsimplificada,1)
+t = 0:0.01:30;   % vector de tiempo
+r = t;           % señal rampa
+
+% calcular respuesta
+y = lsim(Ms, r, t);
+
+
+figure;
+plot(t, y, 'LineWidth', 2);
+hold on;
+plot(t, r, '--', 'LineWidth', 1.2);
+legend('Salida y(t)', 'Entrada r(t)=t');  
